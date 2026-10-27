@@ -1,67 +1,82 @@
-// Menú adaptable para celular
-const menuBtn = document.getElementById("menuBtn");
-const navLinks = document.getElementById("navLinks");
+// MUNDO ALMENDRO - COBACH PLANTEL 240
 
-if (menuBtn && navLinks) {
-    menuBtn.addEventListener("click", () => {
-        const abierto = navLinks.classList.toggle("open");
+const enlaceProyecto =
+  "https://carlosvazquezvazquez22-cmyk.github.io/-rbol-de-almendro-malabar-/";
 
-        menuBtn.setAttribute("aria-expanded", String(abierto));
-        menuBtn.setAttribute(
-            "aria-label",
-            abierto ? "Cerrar menú" : "Abrir menú"
-        );
+const contenedorQR = document.getElementById("codigoQR");
+const logoQR = document.getElementById("logoQR");
+const botonDescarga = document.getElementById("descargarQR");
+const estadoQR = document.getElementById("estadoQR");
 
-        menuBtn.textContent = abierto ? "✕" : "☰";
-    });
+let qrListo = false;
 
-    navLinks.querySelectorAll("a").forEach((enlace) => {
-        enlace.addEventListener("click", () => {
-            navLinks.classList.remove("open");
-            menuBtn.setAttribute("aria-expanded", "false");
-            menuBtn.setAttribute("aria-label", "Abrir menú");
-            menuBtn.textContent = "☰";
-        });
-    });
+// Generar el código QR
+if (typeof QRCode !== "undefined") {
+  new QRCode(contenedorQR, {
+    text: enlaceProyecto,
+    width: 256,
+    height: 256,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
 
-    document.addEventListener("keydown", (evento) => {
-        if (evento.key === "Escape") {
-            navLinks.classList.remove("open");
-            menuBtn.setAttribute("aria-expanded", "false");
-            menuBtn.setAttribute("aria-label", "Abrir menú");
-            menuBtn.textContent = "☰";
-        }
-    });
+  qrListo = true;
+  estadoQR.textContent =
+    "QR generado. Comprueba que abra la página publicada.";
+} else {
+  estadoQR.textContent =
+    "No se pudo cargar el generador QR. Revisa tu conexión a internet.";
+  botonDescarga.disabled = true;
 }
 
-// Año automático del pie de página
-const year = document.getElementById("year");
-
-if (year) {
-    year.textContent = new Date().getFullYear();
-}
-
-// Botón para volver al inicio
-const topBtn = document.getElementById("topBtn");
-
-if (topBtn) {
-    window.addEventListener("scroll", () => {
-        topBtn.classList.toggle("visible", window.scrollY > 400);
-    });
-
-    topBtn.addEventListener("click", () => {
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    });
-}
-
-// Comprobación de las imágenes locales
-document.querySelectorAll("img").forEach((imagen) => {
-    imagen.addEventListener("error", () => {
-        console.warn("No se pudo cargar la imagen:", imagen.getAttribute("src"));
-    });
+// Avisar si falta el logotipo
+logoQR.addEventListener("error", function () {
+  estadoQR.textContent =
+    "El QR está generado, pero falta cobach.png. Agrega el logotipo oficial para cumplir los requisitos.";
 });
 
-console.log("Mundo Almendro está listo 🌿");
+// Descargar el QR como JPG
+botonDescarga.addEventListener("click", function () {
+  const qrCanvas = contenedorQR.querySelector("canvas");
+
+  if (!qrListo || !qrCanvas) {
+    estadoQR.textContent =
+      "El QR todavía no está listo. Recarga la página e inténtalo de nuevo.";
+    return;
+  }
+
+  if (!logoQR.complete || logoQR.naturalWidth === 0) {
+    estadoQR.textContent =
+      "Primero agrega el logotipo oficial como cobach.png.";
+    return;
+  }
+
+  const margen = 24;
+  const salida = document.createElement("canvas");
+  const contexto = salida.getContext("2d");
+
+  salida.width = qrCanvas.width + margen * 2;
+  salida.height = qrCanvas.height + margen * 2;
+
+  contexto.fillStyle = "#ffffff";
+  contexto.fillRect(0, 0, salida.width, salida.height);
+  contexto.drawImage(qrCanvas, margen, margen);
+
+  // Colocar el logotipo en el centro del QR
+  const tamanoLogo = 48;
+  const x = (salida.width - tamanoLogo) / 2;
+  const y = (salida.height - tamanoLogo) / 2;
+
+  contexto.fillStyle = "#ffffff";
+  contexto.fillRect(x - 5, y - 5, tamanoLogo + 10, tamanoLogo + 10);
+  contexto.drawImage(logoQR, x, y, tamanoLogo, tamanoLogo);
+
+  const enlace = document.createElement("a");
+  enlace.download = "Almendro_Malabar.jpg";
+  enlace.href = salida.toDataURL("image/jpeg", 1.0);
+  enlace.click();
+
+  estadoQR.textContent =
+    "Se solicitó la descarga de Almendro_Malabar.jpg.";
+});
